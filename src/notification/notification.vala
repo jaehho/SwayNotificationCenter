@@ -259,6 +259,13 @@ namespace SwayNotificationCenter {
                 this.dismissed_by_swipe = false;
             }
 
+            // Make Control Center notifications keyboard-focusable so that
+            // individual notifications within an expanded group can be
+            // activated/dismissed independently (fixes #522).
+            if (notification_type == NotificationType.CONTROL_CENTER) {
+                set_focusable (true);
+            }
+
             this.body.set_wrap (true);
             this.body.set_wrap_mode (Pango.WrapMode.WORD_CHAR);
             this.body.set_natural_wrap_mode (Gtk.NaturalWrapMode.WORD);

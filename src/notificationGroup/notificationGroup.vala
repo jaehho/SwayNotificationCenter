@@ -421,6 +421,45 @@ namespace SwayNotificationCenter {
             });
         }
 
+        /** Returns the topmost (visually first) Notification inside the
+         * expanded group. Walks the widget tree from the last attached child
+         * because new notifications are appended to the GTK tree but
+         * displayed at the top of the expanded view. */
+        public unowned Notification ?get_first_visual_notification () {
+            unowned Gtk.Widget ?w = group.get_last_child ();
+            while (w != null && !(w is Notification)) {
+                w = w.get_prev_sibling ();
+            }
+            return (Notification ?) w;
+        }
+
+        /** Returns the bottommost (visually last) Notification inside the
+         * expanded group. See get_first_visual_notification(). */
+        public unowned Notification ?get_last_visual_notification () {
+            unowned Gtk.Widget ?w = group.get_first_child ();
+            while (w != null && !(w is Notification)) {
+                w = w.get_next_sibling ();
+            }
+            return (Notification ?) w;
+        }
+
+        /** Returns the Notification visually adjacent to `current` within
+         * this group, or null if `current` is at the edge. `down` traverses
+         * toward older notifications (visually lower). */
+        public unowned Notification ?adjacent_visual_notification (Notification current,
+                                                                   bool down) {
+            unowned Gtk.Widget ?w = down ? current.get_prev_sibling ()
+                                         : current.get_next_sibling ();
+            while (w != null && !(w is Notification)) {
+                w = down ? w.get_prev_sibling () : w.get_next_sibling ();
+            }
+            return (Notification ?) w;
+        }
+
+        public bool is_expanded () {
+            return group.is_expanded;
+        }
+
         public int64 get_time () {
             unowned Notification ?notification = get_latest_notification ();
             if (notification_ids.is_empty || notification == null) {

@@ -289,24 +289,60 @@ namespace SwayNotificationCenter.Widgets {
             list_box.set_activate_on_single_click (false);
         }
 
+        /**
+         * Returns the focused inner Notification widget when keyboard focus
+         * is on a child of an expanded NotificationGroup. Returns null when
+         * focus is on the group row itself or outside any group.
+         */
+        private unowned Notification ?get_focused_inner_notification (NotificationGroup ?group) {
+            if (group == null) return null;
+            Gtk.Root ?root = get_root ();
+            if (!(root is Gtk.Window)) return null;
+            unowned Gtk.Widget ?focus = ((Gtk.Window) root).get_focus ();
+            while (focus != null && focus != group) {
+                if (focus is Notification) {
+                    return (Notification) focus;
+                }
+                focus = focus.get_parent ();
+            }
+            return null;
+        }
+
         public bool key_press_event_cb (uint keyval, uint keycode, Gdk.ModifierType state) {
             if (!(list_box.get_focus_child () is NotificationGroup)) {
                 navigate_to_first_notification ();
             }
             unowned NotificationGroup group = (NotificationGroup) list_box.get_focus_child ();
+            unowned Notification ?inner = get_focused_inner_notification (group);
             switch (Gdk.keyval_name (keyval)) {
                 case "Return" :
+                case "l" :
+                    if (inner != null) {
+                        inner.click_default_action ();
+                        break;
+                    }
                     if (group != null) {
                         var noti = group.get_latest_notification ();
                         if (group.state == NotificationGroupState.SINLGE && noti != null) {
                             noti.click_default_action ();
                             break;
                         }
-                        group.on_expand_change (group.toggle_expanded ());
+                        bool now_expanded = group.toggle_expanded ();
+                        group.on_expand_change (now_expanded);
+                        if (now_expanded) {
+                            unowned Notification ?first = group.get_first_visual_notification ();
+                            if (first != null) {
+                                first.grab_focus ();
+                            }
+                        }
                     }
                     break;
                 case "Delete" :
                 case "BackSpace" :
+                    if (inner != null) {
+                        inner.request_dismiss_notification (ClosedReasons.DISMISSED, false);
+                        break;
+                    }
                     if (group != null && n_groups > 0) {
                         unowned Notification ?noti = group.get_latest_notification ();
                         if (group.state == NotificationGroupState.SINLGE && noti != null) {
@@ -315,6 +351,13 @@ namespace SwayNotificationCenter.Widgets {
                         }
                         group.request_dismiss_all_notifications ();
                         break;
+                    }
+                    break;
+                case "h" :
+                    if (group != null && group.is_expanded ()) {
+                        group.set_expanded (false);
+                        group.on_expand_change (false);
+                        group.grab_focus ();
                     }
                     break;
                 case "C" :
@@ -328,15 +371,19 @@ namespace SwayNotificationCenter.Widgets {
                     }
                     break;
                 case "Down" :
+                case "j" :
                     navigate_down (false, group);
                     break;
                 case "Up" :
+                case "k" :
                     navigate_up (false, group);
                     break;
                 case "Home" :
+                case "g" :
                     navigate_to_first_notification ();
                     break;
-                case "End":
+                case "End" :
+                case "G" :
                     navigate_to_last_notification ();
                     break;
                 default:
@@ -345,8 +392,11 @@ namespace SwayNotificationCenter.Widgets {
                         uint num_keyval = Gdk.keyval_from_name (
                             (i + 1).to_string ());
                         if (keyval == num_keyval && group != null) {
-                            var noti = group.get_latest_notification ();
-                            noti.click_alt_action (i);
+                            unowned Notification ?target = inner != null ?
+                                inner : group.get_latest_notification ();
+                            if (target != null) {
+                                target.click_alt_action (i);
+                            }
                             break;
                         }
                     }
@@ -462,7 +512,23 @@ namespace SwayNotificationCenter.Widgets {
 
             if (n_groups == 0) {
                 return;
-            } else if (!(focused_group is NotificationGroup) || n_groups == 1) {
+            }
+
+            // Focused inside an expanded group: step among inner siblings,
+            // exit upward to the group row when at the top of its children.
+            unowned Notification ?inner = get_focused_inner_notification (focused_group);
+            if (inner != null && focused_group != null) {
+                unowned Notification ?prev_inner =
+                    focused_group.adjacent_visual_notification (inner, false);
+                if (prev_inner != null) {
+                    prev_inner.grab_focus ();
+                    return;
+                }
+                focused_group.grab_focus ();
+                return;
+            }
+
+            if (!(focused_group is NotificationGroup) || n_groups == 1) {
                 navigate_to_first_notification ();
                 return;
             }
@@ -472,6 +538,19 @@ namespace SwayNotificationCenter.Widgets {
                     navigate_down (false, focused_group);
                 }
                 return;
+            }
+
+            // Step into the previous group; if expanded, dive to its
+            // bottommost child to maintain symmetric vim-style navigation.
+            unowned NotificationGroup ?prev_group =
+                (NotificationGroup) focused_group.get_prev_sibling ();
+            if (prev_group != null && prev_group.is_expanded ()
+                && prev_group.state == NotificationGroupState.MANY) {
+                unowned Notification ?last = prev_group.get_last_visual_notification ();
+                if (last != null) {
+                    last.grab_focus ();
+                    return;
+                }
             }
             focused_group.move_focus (Gtk.DirectionType.TAB_BACKWARD);
         }
@@ -484,7 +563,38 @@ namespace SwayNotificationCenter.Widgets {
 
             if (n_groups == 0) {
                 return;
-            } else if (!(focused_group is NotificationGroup) || n_groups == 1) {
+            }
+
+            // Focused inside an expanded group: step among inner siblings,
+            // exit downward to the next group row when at the bottom.
+            unowned Notification ?inner = get_focused_inner_notification (focused_group);
+            if (inner != null && focused_group != null) {
+                unowned Notification ?next_inner =
+                    focused_group.adjacent_visual_notification (inner, true);
+                if (next_inner != null) {
+                    next_inner.grab_focus ();
+                    return;
+                }
+                unowned NotificationGroup ?next_group =
+                    (NotificationGroup) focused_group.get_next_sibling ();
+                if (next_group != null) {
+                    next_group.grab_focus ();
+                }
+                return;
+            }
+
+            // Focused on an expanded group with multiple notifications: dive
+            // into its topmost child instead of skipping over the group.
+            if (focused_group != null && focused_group.is_expanded ()
+                && focused_group.state == NotificationGroupState.MANY) {
+                unowned Notification ?first = focused_group.get_first_visual_notification ();
+                if (first != null) {
+                    first.grab_focus ();
+                    return;
+                }
+            }
+
+            if (!(focused_group is NotificationGroup) || n_groups == 1) {
                 navigate_to_first_notification ();
                 return;
             }
