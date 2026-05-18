@@ -155,19 +155,27 @@ namespace SwayNotificationCenter {
             if (get_focus () is Gtk.Editable) {
                 return false;
             }
-            switch (Gdk.keyval_name (keyval)) {
-                case "D":
+            string ?keyname = Gdk.keyval_name (keyval);
+            switch (keyname) {
+                case "D" :
+                case "d" :
                     try {
                         swaync_daemon.toggle_dnd ();
                     } catch (Error e) {
                         critical ("Error: %s\n", e.message);
                     }
-                    break;
-                default:
-                    return notifications_widget.key_press_event_cb (keyval, keycode, state);
+                    return true;
             }
-            // Override the builtin list navigation
-            return true;
+
+            // Allow custom-keyed widgets (e.g. script-switch) to claim the key
+            // before falling through to the notifications list navigation.
+            foreach (unowned Widgets.BaseWidget w in widgets) {
+                if (w.try_handle_key (keyname)) {
+                    return true;
+                }
+            }
+
+            return notifications_widget.key_press_event_cb (keyval, keycode, state);
         }
 
         /** Adds all custom widgets. Removes previous widgets */
