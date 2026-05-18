@@ -320,39 +320,39 @@ namespace SwayNotificationCenter {
                     out std_output,
                     null);
 
-                // stdout:
-                string res = "";
-                IOChannel output = new IOChannel.unix_new (std_output);
-                output.add_watch (IOCondition.IN | IOCondition.HUP, (channel, condition) => {
-                    if (condition == IOCondition.HUP) {
-                        return false;
-                    }
-                    try {
-                        if (channel.read_line (out res, null, null) == IOStatus.NORMAL) {
-                            debug ("Exec output:\n%s", res);
-                        } else {
-                            res = "";
-                        }
-                        return true;
-                    } catch (IOChannelError e) {
-                        warning ("stdout: IOChannelError: %s", e.message);
-                        return false;
-                    } catch (ConvertError e) {
-                        warning ("stdout: ConvertError: %s", e.message);
-                        return false;
-                    }
-                });
-
-                // Close the child when the spawned process is idling
+                // Wait for the child to exit, then drain stdout
+                // synchronously. The previous design used an IOChannel
+                // watch alongside ChildWatch, but IOChannel.add_watch
+                // compiles to g_io_add_watch (no _full variant) which does
+                // not ref its closure data — if the async function
+                // returned before the watch fired, the source dispatched
+                // on freed memory and aborted in read_line.
+                //
+                // Reading synchronously after ChildWatch can't deadlock:
+                // the child has exited, so its write end of the pipe is
+                // closed and reads return at EOF. Callers print at most a
+                // few short lines, well under the 64KB pipe buffer.
                 int end_status = 0;
                 ChildWatch.add (child_pid, (pid, status) => {
                     Process.close_pid (pid);
-                    GLib.FileUtils.close (std_output);
                     end_status = status;
                     execute_command.callback ();
                 });
-                // Waits until `execute_command.callback()` is called above
                 yield;
+
+                string res = "";
+                IOChannel output = new IOChannel.unix_new (std_output);
+                output.set_close_on_unref (true);
+                try {
+                    string line;
+                    while (output.read_line (out line, null, null) == IOStatus.NORMAL) {
+                        res = line;
+                    }
+                } catch (IOChannelError e) {
+                    warning ("stdout: IOChannelError: %s", e.message);
+                } catch (ConvertError e) {
+                    warning ("stdout: ConvertError: %s", e.message);
+                }
                 msg = res;
                 return end_status == 0;
             } catch (Error e) {
