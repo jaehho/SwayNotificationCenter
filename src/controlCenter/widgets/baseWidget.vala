@@ -53,6 +53,24 @@ namespace SwayNotificationCenter.Widgets {
         public virtual void on_cc_visibility_change (bool value) {
         }
 
+        /**
+         * Attempt to handle a Control Center key press. Widgets that bind to
+         * a key in their config (e.g. script-switch's "key" property) return
+         * true if they consumed the press; the dispatcher stops on the first
+         * widget that claims it.
+         */
+        public virtual bool try_handle_key (string ?keyname) {
+            return false;
+        }
+
+        /**
+         * Returns a "key\tdescription" line for the in-CC help overlay, or
+         * null if this widget doesn't bind any keys.
+         */
+        public virtual string ?get_help_entry () {
+            return null;
+        }
+
         protected T ?get_prop<T> (Json.Object config, string value_key, out bool found = null) {
             found = false;
             if (!config.has_member (value_key)) {

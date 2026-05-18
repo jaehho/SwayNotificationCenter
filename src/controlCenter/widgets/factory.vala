@@ -48,6 +48,9 @@ namespace SwayNotificationCenter.Widgets {
             case "inhibitors":
                 widget = new Inhibitors (suffix);
                 break;
+            case "script-switch":
+                widget = new ScriptSwitch (suffix);
+                break;
             default:
                 warning ("Could not find widget: \"%s\"!", key);
                 return null;
