@@ -5,12 +5,20 @@ namespace SwayNotificationCenter {
         unowned Gtk.ScrolledWindow window;
         [GtkChild]
         unowned IterBox box;
+        [GtkChild]
+        unowned Gtk.Revealer help_revealer;
+        [GtkChild]
+        unowned Gtk.Label help_body;
 
         private Gtk.GestureClick blank_window_gesture;
         private bool blank_window_down = false;
         private bool blank_window_in = false;
 
         private Gtk.EventControllerKey key_controller;
+
+        // Set when the press handler closes the help overlay via Escape, so
+        // the subsequent release handler does not also close the CC window.
+        private bool swallow_escape_release = false;
 
         /** Unsorted list of copies of all notifications */
         private List<unowned Widgets.BaseWidget> widgets;
@@ -121,6 +129,7 @@ namespace SwayNotificationCenter {
             key_controller.key_pressed.connect (key_press_event_cb);
 
             add_widgets ();
+            populate_help ();
 
             // Change output on config reload
             app.config_reload.connect ((old, config) => {
@@ -134,6 +143,51 @@ namespace SwayNotificationCenter {
             });
         }
 
+        private void set_help_visible (bool visible) {
+            help_revealer.set_reveal_child (visible);
+            help_revealer.set_can_target (visible);
+        }
+
+        private void populate_help () {
+            string[] lines = {
+                "<b>Navigation</b>",
+                "  j / Down\tNext",
+                "  k / Up\tPrevious",
+                "  g / Home\tTop",
+                "  G / End\tBottom",
+                "  l / Enter\tActivate / expand group",
+                "  h\tCollapse group",
+                "",
+                "<b>Actions</b>",
+                "  Delete\tDismiss",
+                "  1-9\tNotification action",
+                "  d / D\tToggle Do Not Disturb",
+                "  C\tClear all",
+                "  Escape\tClose",
+            };
+
+            string[] widget_lines = {};
+            foreach (unowned Widgets.BaseWidget w in widgets) {
+                string ?entry = w.get_help_entry ();
+                if (entry != null) {
+                    widget_lines += "  " + entry;
+                }
+            }
+            if (widget_lines.length > 0) {
+                lines += "";
+                lines += "<b>Widgets</b>";
+                foreach (string l in widget_lines) {
+                    lines += l;
+                }
+            }
+
+            lines += "";
+            lines += "<b>Other</b>";
+            lines += "  ?\tToggle this help";
+
+            help_body.set_markup (string.joinv ("\n", lines));
+        }
+
         private void key_released_event_cb (uint keyval, uint keycode, Gdk.ModifierType state) {
             if (this.get_focus () is Gtk.Entry) {
                 switch (Gdk.keyval_name (keyval)) {
@@ -145,6 +199,12 @@ namespace SwayNotificationCenter {
             }
             switch (Gdk.keyval_name (keyval)) {
                 case "Escape" :
+                    if (swallow_escape_release) {
+                        swallow_escape_release = false;
+                        return;
+                    }
+                    this.set_visibility (false);
+                    return;
                 case "Caps_Lock":
                     this.set_visibility (false);
                     return;
@@ -157,6 +217,16 @@ namespace SwayNotificationCenter {
             }
             string ?keyname = Gdk.keyval_name (keyval);
             switch (keyname) {
+                case "question" :
+                    set_help_visible (!help_revealer.reveal_child);
+                    return true;
+                case "Escape" :
+                    if (help_revealer.reveal_child) {
+                        set_help_visible (false);
+                        swallow_escape_release = true;
+                        return true;
+                    }
+                    break;
                 case "D" :
                 case "d" :
                     try {

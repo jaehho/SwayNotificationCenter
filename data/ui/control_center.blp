@@ -16,13 +16,51 @@ template $SwayNotificationCenterControlCenter: ApplicationWindow {
     ]
 
     child: Viewport {
-      child: $IterBox box {
-        orientation: vertical;
-        vexpand: true;
+      child: Overlay {
+        $IterBox box {
+          orientation: vertical;
+          vexpand: true;
 
-        styles [
-          "widgets",
-        ]
+          styles [
+            "widgets",
+          ]
+        }
+
+        [overlay]
+        Revealer help_revealer {
+          transition-type: crossfade;
+          reveal-child: false;
+          halign: fill;
+          valign: fill;
+          can-target: false;
+
+          Box help_panel {
+            orientation: vertical;
+            halign: center;
+            valign: center;
+
+            styles [
+              "help-overlay",
+            ]
+
+            Label help_title {
+              label: "Keybinds";
+
+              styles [
+                "help-overlay-title",
+              ]
+            }
+
+            Label help_body {
+              use-markup: true;
+              xalign: 0;
+
+              styles [
+                "help-overlay-body",
+              ]
+            }
+          }
+        }
       };
     };
   }
