@@ -71,6 +71,19 @@ namespace SwayNotificationCenter.Widgets {
             return null;
         }
 
+        /**
+         * Match a pressed key name against a configured keybind. Single-letter
+         * binds match case-insensitively (so "i" claims both "i" and "I");
+         * longer GDK key names like "Tab" or "F1" match exactly.
+         */
+        protected static bool key_matches (string ?keyname, string keybind) {
+            if (keyname == null || keybind.length == 0) return false;
+            if (keybind.length == 1 && keyname.length == 1) {
+                return keybind.ascii_down () == keyname.ascii_down ();
+            }
+            return keyname == keybind;
+        }
+
         protected T ?get_prop<T> (Json.Object config, string value_key, out bool found = null) {
             found = false;
             if (!config.has_member (value_key)) {

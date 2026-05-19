@@ -11,6 +11,7 @@ namespace SwayNotificationCenter.Widgets {
 
         // Default config values
         string title = "Do Not Disturb";
+        string keybind = "d";
 
         public Dnd (string suffix) {
             base (suffix);
@@ -22,6 +23,8 @@ namespace SwayNotificationCenter.Widgets {
                 if (title != null) {
                     this.title = title;
                 }
+                string ?k = get_prop<string> (config, "key");
+                if (k != null) this.keybind = k;
             }
 
             // Title
@@ -50,6 +53,21 @@ namespace SwayNotificationCenter.Widgets {
 
         private void switch_active_changed_cb () {
             noti_daemon.dnd = dnd_button.active;
+        }
+
+        public override bool try_handle_key (string ?keyname) {
+            if (!key_matches (keyname, keybind)) return false;
+            try {
+                swaync_daemon.toggle_dnd ();
+            } catch (Error e) {
+                critical ("Error: %s\n", e.message);
+            }
+            return true;
+        }
+
+        public override string ?get_help_entry () {
+            if (keybind.length == 0) return null;
+            return "%s\t%s".printf (keybind, title);
         }
     }
 }

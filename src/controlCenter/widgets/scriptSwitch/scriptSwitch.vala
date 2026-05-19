@@ -63,8 +63,7 @@ namespace SwayNotificationCenter.Widgets {
         }
 
         public override bool try_handle_key (string ?keyname) {
-            if (keybind.length == 0 || keyname == null) return false;
-            if (keyname != keybind) return false;
+            if (!key_matches (keyname, keybind)) return false;
             toggle.set_active (!toggle.active);
             return true;
         }

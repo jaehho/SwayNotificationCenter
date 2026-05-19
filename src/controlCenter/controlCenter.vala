@@ -161,7 +161,6 @@ namespace SwayNotificationCenter {
                 "<b>Actions</b>",
                 "  Delete\tDismiss",
                 "  1-9\tNotification action",
-                "  d / D\tToggle Do Not Disturb",
                 "  C\tClear all",
                 "  Escape\tClose",
             };
@@ -228,14 +227,6 @@ namespace SwayNotificationCenter {
                         return true;
                     }
                     break;
-                case "D" :
-                case "d" :
-                    try {
-                        swaync_daemon.toggle_dnd ();
-                    } catch (Error e) {
-                        critical ("Error: %s\n", e.message);
-                    }
-                    return true;
             }
 
             // Allow custom-keyed widgets (e.g. script-switch) to claim the key
