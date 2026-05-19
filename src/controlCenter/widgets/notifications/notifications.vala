@@ -79,6 +79,18 @@ namespace SwayNotificationCenter.Widgets {
             if (value) {
                 navigate_to_first_notification ();
 
+                // If a group was left expanded from a previous CC session,
+                // focus its first inner notification — otherwise the group
+                // row keeps focus and Enter collapses the group instead of
+                // activating the top notification.
+                if (expanded_group != null) {
+                    unowned Notification ?first =
+                        expanded_group.get_first_visual_notification ();
+                    if (first != null) {
+                        first.grab_focus ();
+                    }
+                }
+
                 foreach (unowned Gtk.Widget w in list_box_controller.get_children ()) {
                     var group = (NotificationGroup) w;
                     if (group != null) {
