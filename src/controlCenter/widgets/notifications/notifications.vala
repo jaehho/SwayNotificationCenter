@@ -314,6 +314,7 @@ namespace SwayNotificationCenter.Widgets {
             }
             unowned NotificationGroup group = (NotificationGroup) list_box.get_focus_child ();
             unowned Notification ?inner = get_focused_inner_notification (group);
+            bool handled = true;
             switch (Gdk.keyval_name (keyval)) {
                 case "Return" :
                 case "l" :
@@ -387,23 +388,26 @@ namespace SwayNotificationCenter.Widgets {
                     navigate_to_last_notification ();
                     break;
                 default:
+                    handled = false;
                     // Pressing 1-9 to activate a notification action
                     for (int i = 0; i < 9; i++) {
                         uint num_keyval = Gdk.keyval_from_name (
                             (i + 1).to_string ());
-                        if (keyval == num_keyval && group != null) {
-                            unowned Notification ?target = inner != null ?
-                                inner : group.get_latest_notification ();
-                            if (target != null) {
-                                target.click_alt_action (i);
+                        if (keyval == num_keyval) {
+                            handled = true;
+                            if (group != null) {
+                                unowned Notification ?target = inner != null ?
+                                    inner : group.get_latest_notification ();
+                                if (target != null) {
+                                    target.click_alt_action (i);
+                                }
                             }
                             break;
                         }
                     }
                     break;
             }
-            // Override the builtin list navigation
-            return true;
+            return handled;
         }
 
         /**

@@ -184,6 +184,7 @@ namespace SwayNotificationCenter {
             lines += "";
             lines += "<b>Other</b>";
             lines += "  ?\tToggle this help";
+            lines += "  any other\tClose";
 
             help_body.set_markup (string.joinv ("\n", lines));
         }
@@ -245,7 +246,50 @@ namespace SwayNotificationCenter {
                 }
             }
 
-            return notifications_widget.key_press_event_cb (keyval, keycode, state);
+            if (notifications_widget.key_press_event_cb (keyval, keycode, state)) {
+                return true;
+            }
+
+            // Unhandled non-modifier press closes the CC. Escape and Caps_Lock
+            // are intentionally left to the release handler so they don't get
+            // passed through to a fullscreen app behind us.
+            if (!is_passthrough_keyname (keyname)) {
+                if (help_revealer.reveal_child) {
+                    set_help_visible (false);
+                } else {
+                    this.set_visibility (false);
+                }
+            }
+            return true;
+        }
+
+        private static bool is_passthrough_keyname (string ?name) {
+            if (name == null) {
+                return true;
+            }
+            switch (name) {
+                case "Escape":
+                case "Caps_Lock":
+                case "Num_Lock":
+                case "Scroll_Lock":
+                case "Shift_L":
+                case "Shift_R":
+                case "Control_L":
+                case "Control_R":
+                case "Alt_L":
+                case "Alt_R":
+                case "Meta_L":
+                case "Meta_R":
+                case "Super_L":
+                case "Super_R":
+                case "Hyper_L":
+                case "Hyper_R":
+                case "ISO_Level3_Shift":
+                case "ISO_Level5_Shift":
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         /** Adds all custom widgets. Removes previous widgets */
