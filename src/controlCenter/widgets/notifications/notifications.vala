@@ -77,25 +77,28 @@ namespace SwayNotificationCenter.Widgets {
 
         public override void on_cc_visibility_change (bool value) {
             if (value) {
-                navigate_to_first_notification ();
-
-                // If a group was left expanded from a previous CC session,
-                // focus its first inner notification — otherwise the group
-                // row keeps focus and Enter collapses the group instead of
-                // activating the top notification.
-                if (expanded_group != null) {
-                    unowned Notification ?first =
-                        expanded_group.get_first_visual_notification ();
-                    if (first != null) {
-                        first.grab_focus ();
-                    }
-                }
-
                 foreach (unowned Gtk.Widget w in list_box_controller.get_children ()) {
                     var group = (NotificationGroup) w;
                     if (group != null) {
                         group.update ();
                     }
+                }
+
+                // Grab focus only once the freshly (re)created wl_surface has
+                // been mapped. set_visibility () unrealizes the surface right
+                // before calling us, so a synchronous grab here is dropped and
+                // the user would otherwise have to press a key to focus the
+                // first row.
+                Idle.add (() => {
+                    navigate_to_first_notification ();
+                    return Source.REMOVE;
+                });
+            } else {
+                // Always reopen with every group collapsed: collapse whatever
+                // group was left expanded when the panel is hidden.
+                if (expanded_group != null) {
+                    expanded_group.set_expanded (false);
+                    expanded_group.on_expand_change (false);
                 }
             }
         }
@@ -352,6 +355,7 @@ namespace SwayNotificationCenter.Widgets {
                     break;
                 case "Delete" :
                 case "BackSpace" :
+                case "x" :
                     if (inner != null) {
                         inner.request_dismiss_notification (ClosedReasons.DISMISSED, false);
                         break;
@@ -530,17 +534,24 @@ namespace SwayNotificationCenter.Widgets {
                 return;
             }
 
-            // Focused inside an expanded group: step among inner siblings,
-            // exit upward to the group row when at the top of its children.
-            unowned Notification ?inner = get_focused_inner_notification (focused_group);
-            if (inner != null && focused_group != null) {
+            // Confine navigation to an expanded group: step among its inner
+            // notifications and clamp at the top rather than leaving for the
+            // previous group. Collapse the group with `h` to exit.
+            if (focused_group != null && focused_group.is_expanded ()) {
+                unowned Notification ?inner =
+                    get_focused_inner_notification (focused_group);
+                if (inner == null) {
+                    // On the group row at the top of the group: clamp.
+                    return;
+                }
                 unowned Notification ?prev_inner =
                     focused_group.adjacent_visual_notification (inner, false);
                 if (prev_inner != null) {
                     prev_inner.grab_focus ();
-                    return;
+                } else {
+                    // At the first child: step up to the group row.
+                    focused_group.grab_focus ();
                 }
-                focused_group.grab_focus ();
                 return;
             }
 
@@ -555,19 +566,6 @@ namespace SwayNotificationCenter.Widgets {
                 }
                 return;
             }
-
-            // Step into the previous group; if expanded, dive to its
-            // bottommost child to maintain symmetric vim-style navigation.
-            unowned NotificationGroup ?prev_group =
-                (NotificationGroup) focused_group.get_prev_sibling ();
-            if (prev_group != null && prev_group.is_expanded ()
-                && prev_group.state == NotificationGroupState.MANY) {
-                unowned Notification ?last = prev_group.get_last_visual_notification ();
-                if (last != null) {
-                    last.grab_focus ();
-                    return;
-                }
-            }
             focused_group.move_focus (Gtk.DirectionType.TAB_BACKWARD);
         }
 
@@ -581,33 +579,28 @@ namespace SwayNotificationCenter.Widgets {
                 return;
             }
 
-            // Focused inside an expanded group: step among inner siblings,
-            // exit downward to the next group row when at the bottom.
-            unowned Notification ?inner = get_focused_inner_notification (focused_group);
-            if (inner != null && focused_group != null) {
+            // Confine navigation to an expanded group: step among its inner
+            // notifications and clamp at the bottom rather than spilling into
+            // the next, collapsed group. Collapse the group with `h` to exit.
+            if (focused_group != null && focused_group.is_expanded ()) {
+                unowned Notification ?inner =
+                    get_focused_inner_notification (focused_group);
+                if (inner == null) {
+                    // On the group row: dive into the topmost child.
+                    unowned Notification ?first =
+                        focused_group.get_first_visual_notification ();
+                    if (first != null) {
+                        first.grab_focus ();
+                    }
+                    return;
+                }
                 unowned Notification ?next_inner =
                     focused_group.adjacent_visual_notification (inner, true);
                 if (next_inner != null) {
                     next_inner.grab_focus ();
-                    return;
                 }
-                unowned NotificationGroup ?next_group =
-                    (NotificationGroup) focused_group.get_next_sibling ();
-                if (next_group != null) {
-                    next_group.grab_focus ();
-                }
+                // else: clamp at the bottom child.
                 return;
-            }
-
-            // Focused on an expanded group with multiple notifications: dive
-            // into its topmost child instead of skipping over the group.
-            if (focused_group != null && focused_group.is_expanded ()
-                && focused_group.state == NotificationGroupState.MANY) {
-                unowned Notification ?first = focused_group.get_first_visual_notification ();
-                if (first != null) {
-                    first.grab_focus ();
-                    return;
-                }
             }
 
             if (!(focused_group is NotificationGroup) || n_groups == 1) {
