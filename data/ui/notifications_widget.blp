@@ -9,6 +9,10 @@ template $SwayNotificationCenterWidgetsNotifications: $SwayNotificationCenterWid
     vhomogeneous: true;
     transition-type: crossfade;
     transition-duration: 200;
+    /* Without this the stack shrink-to-fits the list's natural width (short,
+       ellipsized notifications), centering the whole list inside the panel and
+       narrowing every notification card relative to the widget cards. */
+    hexpand: true;
     vexpand: true;
 
     StackPage {

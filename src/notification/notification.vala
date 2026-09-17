@@ -557,6 +557,10 @@ namespace SwayNotificationCenter {
             if (param.actions.length > 0 || code != null) {
                 alt_actions_box.set_visible (true);
 
+                // Prefix each button with its 1-based index, matching the
+                // keyboard shortcut that activates it (click_alt_action).
+                int action_index = 1;
+
                 // Add "Copy code" Action if available and copy it to clipboard when clicked
                 if (code != null && code.length > 0) {
                     Gtk.FlowBoxChild flowbox_child = new Gtk.FlowBoxChild ();
@@ -564,7 +568,7 @@ namespace SwayNotificationCenter {
                     alt_actions_box.append (flowbox_child);
 
                     Gtk.Button action_button = new Gtk.Button.with_label (
-                        "COPY \"%s\"".printf (code));
+                        "%d. COPY \"%s\"".printf (action_index++, code));
                     action_button.clicked.connect (() => {
                         // Copy to clipboard
                         get_clipboard ().set_text (code);
@@ -583,7 +587,8 @@ namespace SwayNotificationCenter {
                     flowbox_child.add_css_class ("notification-action");
                     alt_actions_box.append (flowbox_child);
 
-                    Gtk.Button action_button = new Gtk.Button.with_label (action.text);
+                    Gtk.Button action_button = new Gtk.Button.with_label (
+                        "%d. %s".printf (action_index++, action.text));
                     action_button.clicked.connect (() => action_clicked (action));
                     action_button.set_can_focus (false);
                     flowbox_child.set_child (action_button);

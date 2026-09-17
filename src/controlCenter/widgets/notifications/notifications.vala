@@ -473,7 +473,11 @@ namespace SwayNotificationCenter.Widgets {
                 }
                 return;
             }
-            focused_group.move_focus (Gtk.DirectionType.TAB_BACKWARD);
+            // move_focus (TAB_BACKWARD) would walk the focus chain through the
+            // focused group's contents (its close button, the action button
+            // flowbox children), which paint no focus style. Navigate to the
+            // previous row directly instead.
+            navigate_list (focused_group.get_index () - 1);
         }
 
         private void navigate_down (bool fallback_other_dir,
@@ -495,7 +499,9 @@ namespace SwayNotificationCenter.Widgets {
                 }
                 return;
             }
-            focused_group.move_focus (Gtk.DirectionType.TAB_FORWARD);
+            // See navigate_up: navigate rows directly rather than walking the
+            // focus chain through the group's contents.
+            navigate_list (focused_group.get_index () + 1);
         }
 
         private void navigate_to_first_notification () {
