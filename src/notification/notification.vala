@@ -94,18 +94,24 @@ namespace SwayNotificationCenter {
         private const string[] TAGS = { "b", "u", "i" };
 
         /**
-         * Keys that activate the Nth action button, in order. Home-row
-         * a/s/d for the first three, then digits, matching the button
-         * prefixes and the ControlCenter key handler.
+         * Keys that activate the Nth action button, in order. </> for
+         * the first two, then digits, matching the button prefixes and
+         * the ControlCenter key handler.
          */
         public const string[] ACTION_KEYS = {
-            "a", "s", "d", "4", "5", "6", "7", "8", "9"
+            "less", "greater", "3", "4", "5", "6", "7", "8", "9"
         };
 
-        /** Shortcut key for the Nth action button, "" if out of range */
+        /** Shortcut label for the Nth action button, "" if out of range */
         public static unowned string action_key (int index) {
-            return index >= 0 && index < ACTION_KEYS.length
-                ? ACTION_KEYS[index] : "";
+            if (index < 0 || index >= ACTION_KEYS.length) {
+                return "";
+            }
+            switch (ACTION_KEYS[index]) {
+                case "less": return "<";
+                case "greater": return ">";
+                default: return ACTION_KEYS[index];
+            }
         }
         private const string[] UNESCAPE_CHARS = {
             "lt;", "#60;", "#x3C;", "#x3c;", // <
