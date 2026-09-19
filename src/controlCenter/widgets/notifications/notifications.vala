@@ -307,6 +307,7 @@ namespace SwayNotificationCenter.Widgets {
                     break;
                 case "Delete" :
                 case "BackSpace" :
+                case "x" :
                     if (group != null && n_groups > 0) {
                         unowned Notification ?noti = group.get_latest_notification ();
                         if (group.state == NotificationGroupState.SINLGE && noti != null) {
@@ -340,11 +341,11 @@ namespace SwayNotificationCenter.Widgets {
                     navigate_to_last_notification ();
                     break;
                 default:
-                    // Pressing 1-9 to activate a notification action
-                    for (int i = 0; i < 9; i++) {
-                        uint num_keyval = Gdk.keyval_from_name (
-                            (i + 1).to_string ());
-                        if (keyval == num_keyval && group != null) {
+                    // Pressing an action's shortcut key (a/s/d, then
+                    // digits) to activate it
+                    for (int i = 0; i < Notification.ACTION_KEYS.length; i++) {
+                        if (keyval == Gdk.keyval_from_name (
+                                Notification.ACTION_KEYS[i]) && group != null) {
                             var noti = group.get_latest_notification ();
                             noti.click_alt_action (i);
                             break;

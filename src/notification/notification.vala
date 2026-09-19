@@ -92,6 +92,21 @@ namespace SwayNotificationCenter {
         private static Regex tag_unescape_regex;
         private static Regex img_tag_regex;
         private const string[] TAGS = { "b", "u", "i" };
+
+        /**
+         * Keys that activate the Nth action button, in order. Home-row
+         * a/s/d for the first three, then digits, matching the button
+         * prefixes and the ControlCenter key handler.
+         */
+        public const string[] ACTION_KEYS = {
+            "a", "s", "d", "4", "5", "6", "7", "8", "9"
+        };
+
+        /** Shortcut key for the Nth action button, "" if out of range */
+        public static unowned string action_key (int index) {
+            return index >= 0 && index < ACTION_KEYS.length
+                ? ACTION_KEYS[index] : "";
+        }
         private const string[] UNESCAPE_CHARS = {
             "lt;", "#60;", "#x3C;", "#x3c;", // <
             "gt;", "#62;", "#x3E;", "#x3e;", // >
@@ -557,9 +572,9 @@ namespace SwayNotificationCenter {
             if (param.actions.length > 0 || code != null) {
                 alt_actions_box.set_visible (true);
 
-                // Prefix each button with its 1-based index, matching the
-                // keyboard shortcut that activates it (click_alt_action).
-                int action_index = 1;
+                // Prefix each button with its shortcut key, matching the
+                // keyboard key that activates it (click_alt_action).
+                int action_index = 0;
 
                 // Add "Copy code" Action if available and copy it to clipboard when clicked
                 if (code != null && code.length > 0) {
@@ -568,7 +583,8 @@ namespace SwayNotificationCenter {
                     alt_actions_box.append (flowbox_child);
 
                     Gtk.Button action_button = new Gtk.Button.with_label (
-                        "%d. COPY \"%s\"".printf (action_index++, code));
+                        "%s. COPY \"%s\"".printf (
+                            Notification.action_key (action_index++), code));
                     action_button.clicked.connect (() => {
                         // Copy to clipboard
                         get_clipboard ().set_text (code);
@@ -588,7 +604,8 @@ namespace SwayNotificationCenter {
                     alt_actions_box.append (flowbox_child);
 
                     Gtk.Button action_button = new Gtk.Button.with_label (
-                        "%d. %s".printf (action_index++, action.text));
+                        "%s. %s".printf (
+                            Notification.action_key (action_index++), action.text));
                     action_button.clicked.connect (() => action_clicked (action));
                     action_button.set_can_focus (false);
                     flowbox_child.set_child (action_button);
