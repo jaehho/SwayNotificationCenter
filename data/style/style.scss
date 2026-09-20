@@ -240,6 +240,14 @@ notificationwindow, blankwindow {
         &>button {
           border-radius: var(--border-radius);
           color: var(--text-color);
+
+          /* Corner badge with the key that activates this action */
+          .action-key-hint {
+            font-size: 9px;
+            font-weight: 700;
+            opacity: 0.5;
+            margin: 2px 5px 0 0;
+          }
         }
       }
     }

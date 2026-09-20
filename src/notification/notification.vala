@@ -113,6 +113,28 @@ namespace SwayNotificationCenter {
                 default: return ACTION_KEYS[index];
             }
         }
+
+        /** An action button: action text, with its activating key
+            hinted as a corner badge (styled via .action-key-hint) */
+        private Gtk.Button action_button (string text, string key_hint) {
+            var button = new Gtk.Button ();
+
+            var label = new Gtk.Label (text);
+            label.ellipsize = Pango.EllipsizeMode.END;
+
+            var hint = new Gtk.Label (key_hint);
+            hint.add_css_class ("action-key-hint");
+            hint.halign = Gtk.Align.END;
+            hint.valign = Gtk.Align.START;
+            hint.can_target = false;
+
+            var overlay = new Gtk.Overlay ();
+            overlay.child = label;
+            overlay.add_overlay (hint);
+
+            button.child = overlay;
+            return button;
+        }
         private const string[] UNESCAPE_CHARS = {
             "lt;", "#60;", "#x3C;", "#x3c;", // <
             "gt;", "#62;", "#x3E;", "#x3e;", // >
@@ -578,8 +600,9 @@ namespace SwayNotificationCenter {
             if (param.actions.length > 0 || code != null) {
                 alt_actions_box.set_visible (true);
 
-                // Prefix each button with its shortcut key, matching the
-                // keyboard key that activates it (click_alt_action).
+                // Each button carries its activating key as a corner
+                // badge, matching the ControlCenter key handler
+                // (click_alt_action).
                 int action_index = 0;
 
                 // Add "Copy code" Action if available and copy it to clipboard when clicked
@@ -588,17 +611,17 @@ namespace SwayNotificationCenter {
                     flowbox_child.add_css_class ("notification-action");
                     alt_actions_box.append (flowbox_child);
 
-                    Gtk.Button action_button = new Gtk.Button.with_label (
-                        "%s. COPY \"%s\"".printf (
-                            Notification.action_key (action_index++), code));
-                    action_button.clicked.connect (() => {
+                    Gtk.Button button = action_button (
+                        "COPY \"%s\"".printf (code),
+                        Notification.action_key (action_index++));
+                    button.clicked.connect (() => {
                         // Copy to clipboard
                         get_clipboard ().set_text (code);
                         // Dismiss notification
                         action_clicked (null);
                     });
-                    action_button.set_can_focus (false);
-                    flowbox_child.set_child (action_button);
+                    button.set_can_focus (false);
+                    flowbox_child.set_child (button);
                 }
 
                 int max_children_per_line = 0;
@@ -609,12 +632,11 @@ namespace SwayNotificationCenter {
                     flowbox_child.add_css_class ("notification-action");
                     alt_actions_box.append (flowbox_child);
 
-                    Gtk.Button action_button = new Gtk.Button.with_label (
-                        "%s. %s".printf (
-                            Notification.action_key (action_index++), action.text));
-                    action_button.clicked.connect (() => action_clicked (action));
-                    action_button.set_can_focus (false);
-                    flowbox_child.set_child (action_button);
+                    Gtk.Button button = action_button (action.text,
+                        Notification.action_key (action_index++));
+                    button.clicked.connect (() => action_clicked (action));
+                    button.set_can_focus (false);
+                    flowbox_child.set_child (button);
                 }
                 alt_actions_box.set_max_children_per_line (max_children_per_line.clamp (1, 7));
             }
