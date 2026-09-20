@@ -296,10 +296,14 @@ namespace SwayNotificationCenter.Widgets {
             unowned NotificationGroup group = (NotificationGroup) list_box.get_focus_child ();
             switch (Gdk.keyval_name (keyval)) {
                 case "Return" :
+                case "KP_Enter" :
                     if (group != null) {
                         var noti = group.get_latest_notification ();
                         if (group.state == NotificationGroupState.SINLGE && noti != null) {
                             noti.click_default_action ();
+                            // Enter means "act and move on": close the
+                            // panel even though hide-on-action is false
+                            swaync_daemon.set_visibility (false);
                             break;
                         }
                         group.on_expand_change (group.toggle_expanded ());
@@ -341,11 +345,16 @@ namespace SwayNotificationCenter.Widgets {
                     navigate_to_last_notification ();
                     break;
                 default:
-                    // Pressing an action's shortcut key (a/s/d, then
-                    // digits) to activate it
+                    // Pressing an action's shortcut key to activate it:
+                    // ,/. (or the same keys shifted, </>) for the first
+                    // two, then digits
                     for (int i = 0; i < Notification.ACTION_KEYS.length; i++) {
-                        if (keyval == Gdk.keyval_from_name (
-                                Notification.ACTION_KEYS[i]) && group != null) {
+                        bool match = keyval == Gdk.keyval_from_name (
+                                Notification.ACTION_KEYS[i])
+                            || (i < Notification.ACTION_ALT_KEYS.length
+                                && keyval == Gdk.keyval_from_name (
+                                    Notification.ACTION_ALT_KEYS[i]));
+                        if (match && group != null) {
                             var noti = group.get_latest_notification ();
                             noti.click_alt_action (i);
                             break;

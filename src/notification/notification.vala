@@ -95,11 +95,17 @@ namespace SwayNotificationCenter {
 
         /**
          * Keys that activate the Nth action button, in order. ,/. for
-         * the first two, then digits, matching the button prefixes and
-         * the ControlCenter key handler.
+         * the first two (displayed as </>), then digits, matching the
+         * button hints and the ControlCenter key handler.
          */
         public const string[] ACTION_KEYS = {
             "comma", "period", "3", "4", "5", "6", "7", "8", "9"
+        };
+
+        /** Alternate keys accepted for the first two actions
+            (same physical keys, shifted) */
+        public const string[] ACTION_ALT_KEYS = {
+            "less", "greater"
         };
 
         /** Shortcut label for the Nth action button, "" if out of range */
@@ -108,8 +114,8 @@ namespace SwayNotificationCenter {
                 return "";
             }
             switch (ACTION_KEYS[index]) {
-                case "comma": return ",";
-                case "period": return ".";
+                case "comma": return "<";
+                case "period": return ">";
                 default: return ACTION_KEYS[index];
             }
         }
