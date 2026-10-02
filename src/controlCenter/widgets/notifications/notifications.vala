@@ -312,6 +312,7 @@ namespace SwayNotificationCenter.Widgets {
                 case "Delete" :
                 case "BackSpace" :
                 case "x" :
+                case "d" :
                     if (group != null && n_groups > 0) {
                         unowned Notification ?noti = group.get_latest_notification ();
                         if (group.state == NotificationGroupState.SINLGE && noti != null) {
@@ -325,12 +326,8 @@ namespace SwayNotificationCenter.Widgets {
                 case "C" :
                     request_dismiss_all_notifications ();
                     break;
-                case "D" :
-                    try {
-                        swaync_daemon.toggle_dnd ();
-                    } catch (Error e) {
-                        critical ("Error: %s\n", e.message);
-                    }
+                case "q" :
+                    swaync_daemon.set_visibility (false);
                     break;
                 case "Down" :
                     navigate_down (false, group);
