@@ -149,7 +149,14 @@ namespace SwayNotificationCenter {
             gesture.set_exclusive (true);
             gesture.set_button (Gdk.BUTTON_PRIMARY);
             gesture.set_propagation_phase (Gtk.PropagationPhase.CAPTURE);
-            gesture.pressed.connect ((_gesture, _n_press, x, y) => {
+            gesture.pressed.connect ((gesture, _n_press, x, y) => {
+                // Only take the click when this group will act on it
+                // (collapsed multi-notification expand). Otherwise deny
+                // so the notification's default-action gesture can run.
+                if (group.is_expanded || state != NotificationGroupState.MANY) {
+                    gesture.set_state (Gtk.EventSequenceState.DENIED);
+                    return;
+                }
                 gesture_in = true;
                 gesture_down = true;
             });
