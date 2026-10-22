@@ -1,0 +1,33 @@
+# Maintainer: Jaeho Cho <jaeho2025@gmail.com>
+# Based on the Arch extra PKGBUILD for swaync.
+
+pkgname=swaync
+_pkgname=SwayNotificationCenter
+pkgver=0.12.6.r6.gc7a158c
+pkgrel=1
+pkgdesc="A simple GTK based notification daemon for Sway (jaehho fork: panel keyboard nav, list width, numbered action buttons)"
+url="https://github.com/jaehho/SwayNotificationCenter"
+arch=('x86_64')
+license=('GPL-3.0-only')
+depends=('gtk4' 'gtk4-layer-shell' 'libadwaita' 'glib2' 'libgee' 'json-glib' 'libpulse' 'granite7')
+makedepends=('vala' 'meson' 'git' 'scdoc' 'sassc' 'gobject-introspection' 'blueprint-compiler')
+optdepends=('gvfs: Get album art in MPRIS widget')
+provides=('swaync' 'notification-daemon')
+conflicts=('swaync')
+source=("git+${url}.git")
+sha256sums=('SKIP')
+
+pkgver() {
+	cd "${_pkgname}"
+	git describe --tags --long | sed 's/^v//;s/-/.r/;s/-/./g'
+}
+
+build() {
+	arch-meson "${_pkgname}" build -Dscripting=true
+	ninja -C build
+}
+
+package() {
+	DESTDIR="${pkgdir}" ninja -C build install
+	install -Dm 644 "${_pkgname}/README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}
