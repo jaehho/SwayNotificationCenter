@@ -472,6 +472,24 @@ namespace SwayNotificationCenter {
                 match.strip (), (c) => c.isdigit () || c.isspace ()).strip ();
         }
 
+        /**
+         * Copies this notification's text to the clipboard: the summary
+         * line and body as shown, not the raw markup.
+         */
+        public void yank () {
+            string summary = this.summary.get_text ().strip ();
+            string body = this.body.get_text ().strip ();
+            string text;
+            if (summary.length > 0 && body.length > 0) {
+                text = "%s\n%s".printf (summary, body);
+            } else {
+                text = summary + body;
+            }
+            if (text.length > 0) {
+                get_clipboard ().set_text (text);
+            }
+        }
+
         public void click_default_action () {
             action_clicked (param.default_action);
         }

@@ -329,6 +329,14 @@ namespace SwayNotificationCenter.Widgets {
                 case "q" :
                     swaync_daemon.set_visibility (false);
                     break;
+                case "y" :
+                    if (group != null) {
+                        unowned Notification ?noti = group.get_latest_notification ();
+                        if (noti != null) {
+                            noti.yank ();
+                        }
+                    }
+                    break;
                 case "Down" :
                     navigate_down (false, group);
                     break;
